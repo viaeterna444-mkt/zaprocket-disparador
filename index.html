@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapRocket - Disparador Automático</title>
+    <!-- Fonte Moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+
+        <!-- Sidebar de Configurações -->
+        <aside class="sidebar glass-panel">
+            <div class="logo-area">
+                <i data-lucide="rocket" class="logo-icon"></i>
+                <h2>ZapRocket</h2>
+                <span class="badge">PRO</span>
+            </div>
+
+            <div class="scroll-area">
+                <div class="config-section">
+                    <h3><i data-lucide="tag"></i> Campanha</h3>
+                    <div class="input-group">
+                        <label for="campaignName">Nome da Campanha</label>
+                        <input type="text" id="campaignName" placeholder="Ex: Promoção de Verão"
+                            value="Campanha Sem Nome">
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3><i data-lucide="plug"></i> Conexão n8n</h3>
+                    <div class="input-group">
+                        <label for="webhookUrl">URL do Webhook</label>
+                        <input type="url" id="webhookUrl" placeholder="https://seu-n8n.com/webhook/..." required>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3><i data-lucide="settings"></i> Ajustes de Disparo</h3>
+                    <div class="delay-row">
+                        <div class="input-group">
+                            <label for="delayMin">Pausa Mín (seg)</label>
+                            <input type="number" id="delayMin" value="5" min="1" max="120">
+                        </div>
+                        <div class="input-group">
+                            <label for="delayMax">Pausa Máx (seg)</label>
+                            <input type="number" id="delayMax" value="15" min="1" max="120">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="globalTags">Etiquetas (separadas por vírgula)</label>
+                        <input type="text" id="globalTags" placeholder="Promoção, LeadsNovos">
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3><i data-lucide="image"></i> Mídia</h3>
+                    <div class="upload-area" id="imageUploadArea">
+                        <i data-lucide="upload-cloud"></i>
+                        <p>Arraste uma foto ou clique</p>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden-input">
+                    </div>
+                    <div id="imagePreview" class="image-preview hidden">
+                        <img src="" alt="Preview">
+                        <button id="removeImageBtn" class="btn-icon"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3><i data-lucide="message-square"></i> Mensagem</h3>
+                    <div class="input-group">
+                        <label for="messageTemplate">Template (Use {{Coluna}})</label>
+                        <textarea id="messageTemplate" rows="6"
+                            placeholder="Olá {{Nome}}! Temos uma oferta especial para você..."></textarea>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3><i data-lucide="history"></i> Histórico Recente</h3>
+                    <div id="campaignHistory" class="history-list">
+                        <p class="text-muted empty-msg">Nenhum disparo registrado.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="startBtn" class="btn btn-primary btn-bounce" disabled>
+                    <i data-lucide="play"></i> Iniciar Disparos
+                </button>
+                <div class="actions-row">
+                    <button id="pauseBtn" class="btn btn-secondary" disabled>
+                        <i data-lucide="pause"></i> Pausar
+                    </button>
+                    <button id="clearBtn" class="btn btn-danger">
+                        <i data-lucide="trash-2"></i> Limpar Fila
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Área Principal (Kanban Board) -->
+        <main class="main-content">
+            <header class="top-nav glass-panel">
+                <div class="import-section">
+                    <label for="excelInput" class="btn btn-import">
+                        <i data-lucide="file-spreadsheet"></i> Importar Planilha (XLSX/CSV)
+                        <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" class="hidden-input">
+                    </label>
+                    <span id="fileStatus" class="file-status text-muted">Aguardando arquivo...</span>
+                </div>
+
+                <div class="stats-overview">
+                    <div class="stat-pill"><span id="totalLeadsCount">0</span> Leads Totais</div>
+                </div>
+            </header>
+
+            <div class="kanban-board">
+                <!-- Fila de Espera -->
+                <div class="kanban-column glass-panel" id="col-queue" data-status="queue">
+                    <div class="column-header">
+                        <span class="dot dot-gray"></span>
+                        <h4>Fila de Espera</h4>
+                        <span class="count-badge" id="count-queue">0</span>
+                    </div>
+                    <div class="kanban-cards ds-container">
+                        <!-- Cards injetados via JS -->
+                    </div>
+                </div>
+
+                <!-- Processando -->
+                <div class="kanban-column glass-panel column-active" id="col-processing" data-status="processing">
+                    <div class="column-header">
+                        <span class="dot dot-blue"></span>
+                        <h4>Enviando</h4>
+                        <span class="count-badge" id="count-processing">0</span>
+                    </div>
+                    <div class="kanban-cards ds-container">
+                    </div>
+                </div>
+
+                <!-- Enviado -->
+                <div class="kanban-column glass-panel" id="col-sent" data-status="sent">
+                    <div class="column-header">
+                        <span class="dot dot-green"></span>
+                        <h4>Enviado com Sucesso</h4>
+                        <span class="count-badge" id="count-sent">0</span>
+                    </div>
+                    <div class="kanban-cards ds-container">
+                    </div>
+                </div>
+
+                <!-- Erro -->
+                <div class="kanban-column glass-panel" id="col-error" data-status="error">
+                    <div class="column-header">
+                        <span class="dot dot-red"></span>
+                        <h4>Falharam</h4>
+                        <span class="count-badge" id="count-error">0</span>
+                    </div>
+                    <div class="kanban-cards ds-container">
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SheetJS para ler planilhas -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

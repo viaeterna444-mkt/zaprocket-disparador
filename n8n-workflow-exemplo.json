@@ -1,0 +1,186 @@
+{
+  "name": "ZapRocket - Webhook Receiver",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zaprocket-webhook",
+        "options": {}
+      },
+      "id": "c1615f7a-8bfc-4861-bbdf-5da66f07d2f4",
+      "name": "Webhook ZapRocket",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "zaprocket-webhook-custom-id"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json.body;\nconst leadInfo = data.lead;\nconst messageText = data.message;\nconst base64Image = data.image;\nconst tags = data.tags;\n\n// Procura heuristica pelo número de celular\nlet phone = '';\nconst keys = Object.keys(leadInfo);\nfor (const k of keys) {\n  if (k.toLowerCase().includes('telefone') || k.toLowerCase().includes('phone') || k.toLowerCase().includes('numero') || k.toLowerCase().includes('celular')) {\n    phone = leadInfo[k];\n    break;\n  }\n}\nif (!phone) phone = leadInfo[keys[1]]; // fallback p/ 2ª coluna\n\n// Remove caracteres não numéricos\nphone = phone.toString().replace(/\\D/g, '');\n// Se não tiver código de país, adiciona (Assumindo Brasil 55)\nif (phone.length <= 11) {\n    phone = '55' + phone;\n}\n\n// Verifica se tem imagem\nconst hasImage = !!base64Image;\n\nreturn {\n  json: {\n    number: phone,\n    text: messageText,\n    hasImage: hasImage,\n    base64Data: hasImage ? base64Image.split(',')[1] : null,\n    tags: tags,\n    providerInfo: \"Envie esta estrutura para a requisição da Evolution API/WPPCloud\"\n  }\n};"
+      },
+      "id": "e2e8310c-30b6-4b67-8e6d-625b5ce3660f",
+      "name": "Code Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://SUA_API_EVOLUTION_OU_WHATSAPP/message/sendText={{$json.number}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{$json.number}}"
+            },
+            {
+              "name": "options",
+              "value": "={ \"delay\": 1200 }"
+            },
+            {
+              "name": "textMessage",
+              "value": "={{$json.text}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f5c9e2c7-2c5c-5c2b-ac2b-2b3c4d5e6f7a",
+      "name": "Disparo (Texto)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://SUA_API_EVOLUTION_OU_WHATSAPP/message/sendMedia",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{$json.number}}"
+            },
+            {
+              "name": "options",
+              "value": "={ \"delay\": 1200 }"
+            },
+            {
+              "name": "mediaMessage",
+              "value": "={ \"mediatype\": \"image\", \"caption\": \"{{$json.text}}\", \"media\": \"{{$json.base64Data}}\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5d1e2c7-1d5d-5c2b-ac2b-9c3c4d5e6f7a",
+      "name": "Disparo (Media)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.hasImage}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "d1c2b3a4-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "name": "Tem imagem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook ZapRocket": {
+      "main": [
+        [
+          {
+            "node": "Code Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Parser": {
+      "main": [
+        [
+          {
+            "node": "Tem imagem?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem imagem?": {
+      "main": [
+        [
+          {
+            "node": "Disparo (Media)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Disparo (Texto)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f90ce243-7f28-4ce6-91b5-8278f99e82c5",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
