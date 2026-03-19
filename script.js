@@ -19,16 +19,13 @@ const msgInputs = [
     document.getElementById('messageTemplate2'),
     document.getElementById('messageTemplate3')
 ];
+const imagesBase64 = [null, null, null]; // Armazena as 3 imagens
 const msgTabs = document.querySelectorAll('.msg-tab');
+const msgPanes = document.querySelectorAll('.msg-pane');
 
 const excelInput = document.getElementById('excelInput');
 const fileStatus = document.getElementById('fileStatus');
 const totalLeadsCountEl = document.getElementById('totalLeadsCount');
-
-const imageInput = document.getElementById('imageInput');
-const imageUploadArea = document.getElementById('imageUploadArea');
-const imagePreview = document.getElementById('imagePreview');
-const removeImageBtn = document.getElementById('removeImageBtn');
 
 const startBtn = document.getElementById('startBtn');
 const pauseBtn = document.getElementById('pauseBtn');
@@ -50,33 +47,44 @@ const countError = document.getElementById('count-error');
 msgTabs.forEach((tab, index) => {
     tab.addEventListener('click', () => {
         msgTabs.forEach(t => t.classList.remove('active'));
-        msgInputs.forEach(i => i.classList.add('hidden'));
+        msgPanes.forEach(p => p.classList.add('hidden'));
 
         tab.classList.add('active');
-        msgInputs[index].classList.remove('hidden');
+        msgPanes[index].classList.remove('hidden');
     });
 });
-imageUploadArea.addEventListener('click', () => imageInput.click());
 
-imageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (evt) {
-            imageBase64 = evt.target.result;
-            imagePreview.querySelector('img').src = imageBase64;
-            imagePreview.classList.remove('hidden');
-            imageUploadArea.classList.add('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-});
+// --- Lógica de Upload de Imagens por Aba ---
+document.querySelectorAll('.upload-area.mini-upload').forEach(area => {
+    const index = parseInt(area.dataset.index) - 1;
+    const input = area.querySelector('.image-input');
+    const preview = area.parentElement.querySelector('.mini-preview');
 
-removeImageBtn.addEventListener('click', () => {
-    imageBase64 = null;
-    imageInput.value = '';
-    imagePreview.classList.add('hidden');
-    imageUploadArea.classList.remove('hidden');
+    area.addEventListener('click', () => input.click());
+
+    input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                imagesBase64[index] = evt.target.result;
+                preview.querySelector('img').src = evt.target.result;
+                preview.classList.remove('hidden');
+                area.classList.add('hidden');
+                saveConfigs();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    area.parentElement.querySelector('.remove-img').addEventListener('click', (e) => {
+        e.stopPropagation();
+        imagesBase64[index] = null;
+        input.value = '';
+        preview.classList.add('hidden');
+        area.classList.remove('hidden');
+        saveConfigs();
+    });
 });
 
 // --- Lógica de Upload de Planilha (SheetJS) ---
@@ -247,7 +255,7 @@ clearBtn.addEventListener('click', () => {
     leadsList = [];
     isRunning = false;
     isPaused = false;
-    imageBase64 = null;
+    imagesBase64.fill(null);
 
     colQueue.innerHTML = '';
     colProcessing.innerHTML = '';
@@ -258,9 +266,8 @@ clearBtn.addEventListener('click', () => {
     excelInput.value = '';
     totalLeadsCountEl.textContent = '0';
 
-    imageInput.value = '';
-    imagePreview.classList.add('hidden');
-    imageUploadArea.classList.remove('hidden');
+    document.querySelectorAll('.image-preview').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.upload-area').forEach(a => a.classList.remove('hidden'));
 
     checkReadyState();
     updateCounters();
@@ -302,10 +309,13 @@ async function processQueue(webhook) {
         colProcessing.appendChild(currentCard);
         updateCounters();
 
-        // Seleciona a mensagem do revezamento (apenas as que não estão vazias)
-        const activeTemplates = msgInputs.map(i => i.value.trim()).filter(v => v !== "");
-        const templateIndex = (leadsList.length - queueCards.length) % (activeTemplates.length || 1);
-        let finalMessage = activeTemplates[templateIndex] || "";
+        // Seleciona a mensagem e imagem do revezamento (apenas as que não estão vazias)
+        const filledIndices = msgInputs.map((i, idx) => i.value.trim() !== "" ? idx : null).filter(idx => idx !== null);
+        const rotationIdx = (leadsList.length - queueCards.length) % (filledIndices.length || 1);
+        const actualIdx = filledIndices[rotationIdx] ?? 0;
+
+        let finalMessage = msgInputs[actualIdx].value;
+        const currentImage = imagesBase64[actualIdx];
 
         const keys = Object.keys(leadData);
 
@@ -323,7 +333,7 @@ async function processQueue(webhook) {
                 lead: leadData,
                 message: finalMessage,
                 tags: tags,
-                image: imageBase64
+                image: currentImage
             };
 
             const response = await fetch(webhook, {
@@ -406,7 +416,8 @@ function saveConfigs() {
         delayMin: delayMinInput.value,
         delayMax: delayMaxInput.value,
         tags: tagsInput.value,
-        templates: msgInputs.map(i => i.value)
+        templates: msgInputs.map(i => i.value),
+        images: imagesBase64
     };
     localStorage.setItem('zaprocket_configs', JSON.stringify(configs));
 }
@@ -422,6 +433,22 @@ function loadConfigs() {
         if (configs.templates && Array.isArray(configs.templates)) {
             configs.templates.forEach((t, i) => {
                 if (msgInputs[i]) msgInputs[i].value = t;
+            });
+        }
+
+        if (configs.images && Array.isArray(configs.images)) {
+            configs.images.forEach((img, i) => {
+                if (img) {
+                    imagesBase64[i] = img;
+                    const pane = document.getElementById(`pane${i + 1}`);
+                    if (pane) {
+                        const preview = pane.querySelector('.mini-preview');
+                        const area = pane.querySelector('.upload-area');
+                        preview.querySelector('img').src = img;
+                        preview.classList.remove('hidden');
+                        area.classList.add('hidden');
+                    }
+                }
             });
         }
     }

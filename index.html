@@ -59,36 +59,65 @@
                     </div>
                 </div>
 
-                <div class="config-section">
-                    <h3><i data-lucide="image"></i> Mídia</h3>
-                    <div class="upload-area" id="imageUploadArea">
-                        <i data-lucide="upload-cloud"></i>
-                        <p>Arraste uma foto ou clique</p>
-                        <input type="file" id="imageInput" accept="image/*" class="hidden-input">
-                    </div>
-                    <div id="imagePreview" class="image-preview hidden">
-                        <img src="" alt="Preview">
-                        <button id="removeImageBtn" class="btn-icon"><i data-lucide="x"></i></button>
-                    </div>
-                </div>
+
 
                 <div class="config-section">
-                    <h3><i data-lucide="message-square"></i> Rotação de Mensagens</h3>
+                    <h3><i data-lucide="message-square"></i> Rotação + Mídia</h3>
                     <div class="msg-tabs">
-                        <button class="msg-tab active" data-tab="msg1">Msg 1</button>
-                        <button class="msg-tab" data-tab="msg2">Msg 2</button>
-                        <button class="msg-tab" data-tab="msg3">Msg 3</button>
+                        <button class="msg-tab active" data-tab="1">Msg 1</button>
+                        <button class="msg-tab" data-tab="2">Msg 2</button>
+                        <button class="msg-tab" data-tab="3">Msg 3</button>
                     </div>
-                    <div class="input-group">
-                        <textarea id="messageTemplate1" class="msg-content" rows="6"
-                            placeholder="Template 1: Olá {{Nome}}..."></textarea>
-                        <textarea id="messageTemplate2" class="msg-content hidden" rows="6"
-                            placeholder="Template 2: Oi {{Nome}}, tudo bem?..."></textarea>
-                        <textarea id="messageTemplate3" class="msg-content hidden" rows="6"
-                            placeholder="Template 3: E aí {{Nome}}! Veja isso..."></textarea>
+
+                    <div class="msg-panes">
+                        <div id="pane1" class="msg-pane">
+                            <div class="input-group">
+                                <label>Msg 1</label>
+                                <textarea id="messageTemplate1" rows="4" placeholder="Olá {{Nome}}..."></textarea>
+                            </div>
+                            <div class="upload-area mini-upload" data-index="1">
+                                <i data-lucide="image"></i>
+                                <span class="upload-label">Foto 1</span>
+                                <input type="file" class="image-input hidden-input" accept="image/*">
+                            </div>
+                            <div class="image-preview mini-preview hidden">
+                                <img src="" alt="Preview">
+                                <button class="btn-icon remove-img"><i data-lucide="x"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="pane2" class="msg-pane hidden">
+                            <div class="input-group">
+                                <label>Msg 2</label>
+                                <textarea id="messageTemplate2" rows="4" placeholder="Oi {{Nome}}..."></textarea>
+                            </div>
+                            <div class="upload-area mini-upload" data-index="2">
+                                <i data-lucide="image"></i>
+                                <span class="upload-label">Foto 2</span>
+                                <input type="file" class="image-input hidden-input" accept="image/*">
+                            </div>
+                            <div class="image-preview mini-preview hidden">
+                                <img src="" alt="Preview">
+                                <button class="btn-icon remove-img"><i data-lucide="x"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="pane3" class="msg-pane hidden">
+                            <div class="input-group">
+                                <label>Msg 3</label>
+                                <textarea id="messageTemplate3" rows="4" placeholder="E aí {{Nome}}..."></textarea>
+                            </div>
+                            <div class="upload-area mini-upload" data-index="3">
+                                <i data-lucide="image"></i>
+                                <span class="upload-label">Foto 3</span>
+                                <input type="file" class="image-input hidden-input" accept="image/*">
+                            </div>
+                            <div class="image-preview mini-preview hidden">
+                                <img src="" alt="Preview">
+                                <button class="btn-icon remove-img"><i data-lucide="x"></i></button>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-muted" style="font-size: 0.7rem; margin-top: 0.5rem;">O sistema irá revezar entre as
-                        mensagens preenchidas acima.</p>
                 </div>
 
                 <div class="config-section">

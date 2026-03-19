@@ -620,6 +620,66 @@ textarea {
     color: var(--danger);
 }
 
+/* Tabs e Panes de Mensagem */
+.msg-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.msg-tab {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.msg-tab.active {
+    background: var(--primary);
+    color: #000;
+    border-color: var(--primary);
+}
+
+.msg-pane.hidden {
+    display: none;
+}
+
+.mini-upload {
+    padding: 0.8rem;
+    border: 1px dashed var(--glass-border);
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.upload-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.mini-preview {
+    margin-top: 0.5rem;
+    height: 80px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--glass-border);
+}
+
+.mini-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 /* Tabs de Mensagem */
 .msg-tabs {
     display: flex;
