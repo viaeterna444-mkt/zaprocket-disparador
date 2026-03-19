@@ -14,7 +14,12 @@ const delayMaxInput = document.getElementById('delayMax');
 const tagsInput = document.getElementById('globalTags');
 const campaignNameInput = document.getElementById('campaignName');
 const historyContainer = document.getElementById('campaignHistory');
-const msgTemplateInput = document.getElementById('messageTemplate');
+const msgInputs = [
+    document.getElementById('messageTemplate1'),
+    document.getElementById('messageTemplate2'),
+    document.getElementById('messageTemplate3')
+];
+const msgTabs = document.querySelectorAll('.msg-tab');
 
 const excelInput = document.getElementById('excelInput');
 const fileStatus = document.getElementById('fileStatus');
@@ -41,7 +46,16 @@ const countSent = document.getElementById('count-sent');
 const countError = document.getElementById('count-error');
 
 
-// --- Lógica de Upload de Imagem ---
+// --- Lógica de Abas de Mensagem ---
+msgTabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => {
+        msgTabs.forEach(t => t.classList.remove('active'));
+        msgInputs.forEach(i => i.classList.add('hidden'));
+
+        tab.classList.add('active');
+        msgInputs[index].classList.remove('hidden');
+    });
+});
 imageUploadArea.addEventListener('click', () => imageInput.click());
 
 imageInput.addEventListener('change', (e) => {
@@ -288,8 +302,11 @@ async function processQueue(webhook) {
         colProcessing.appendChild(currentCard);
         updateCounters();
 
-        // Monta e processa mensagem
-        let finalMessage = msgTemplateInput.value;
+        // Seleciona a mensagem do revezamento (apenas as que não estão vazias)
+        const activeTemplates = msgInputs.map(i => i.value.trim()).filter(v => v !== "");
+        const templateIndex = (leadsList.length - queueCards.length) % (activeTemplates.length || 1);
+        let finalMessage = activeTemplates[templateIndex] || "";
+
         const keys = Object.keys(leadData);
 
         keys.forEach(key => {
@@ -389,7 +406,7 @@ function saveConfigs() {
         delayMin: delayMinInput.value,
         delayMax: delayMaxInput.value,
         tags: tagsInput.value,
-        template: msgTemplateInput.value
+        templates: msgInputs.map(i => i.value)
     };
     localStorage.setItem('zaprocket_configs', JSON.stringify(configs));
 }
@@ -401,13 +418,18 @@ function loadConfigs() {
         delayMinInput.value = configs.delayMin || '5';
         delayMaxInput.value = configs.delayMax || '15';
         tagsInput.value = configs.tags || '';
-        msgTemplateInput.value = configs.template || '';
+
+        if (configs.templates && Array.isArray(configs.templates)) {
+            configs.templates.forEach((t, i) => {
+                if (msgInputs[i]) msgInputs[i].value = t;
+            });
+        }
     }
     renderHistory();
 }
 
 // Event Listeners para salvar automaticamente
-[webhookInput, delayMinInput, delayMaxInput, tagsInput, msgTemplateInput].forEach(el => {
+[webhookInput, delayMinInput, delayMaxInput, tagsInput, ...msgInputs].forEach(el => {
     el.addEventListener('input', saveConfigs);
 });
 

@@ -73,12 +73,22 @@
                 </div>
 
                 <div class="config-section">
-                    <h3><i data-lucide="message-square"></i> Mensagem</h3>
-                    <div class="input-group">
-                        <label for="messageTemplate">Template (Use {{Coluna}})</label>
-                        <textarea id="messageTemplate" rows="6"
-                            placeholder="Olá {{Nome}}! Temos uma oferta especial para você..."></textarea>
+                    <h3><i data-lucide="message-square"></i> Rotação de Mensagens</h3>
+                    <div class="msg-tabs">
+                        <button class="msg-tab active" data-tab="msg1">Msg 1</button>
+                        <button class="msg-tab" data-tab="msg2">Msg 2</button>
+                        <button class="msg-tab" data-tab="msg3">Msg 3</button>
                     </div>
+                    <div class="input-group">
+                        <textarea id="messageTemplate1" class="msg-content" rows="6"
+                            placeholder="Template 1: Olá {{Nome}}..."></textarea>
+                        <textarea id="messageTemplate2" class="msg-content hidden" rows="6"
+                            placeholder="Template 2: Oi {{Nome}}, tudo bem?..."></textarea>
+                        <textarea id="messageTemplate3" class="msg-content hidden" rows="6"
+                            placeholder="Template 3: E aí {{Nome}}! Veja isso..."></textarea>
+                    </div>
+                    <p class="text-muted" style="font-size: 0.7rem; margin-top: 0.5rem;">O sistema irá revezar entre as
+                        mensagens preenchidas acima.</p>
                 </div>
 
                 <div class="config-section">
