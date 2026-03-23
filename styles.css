@@ -580,6 +580,15 @@ textarea {
     transition: all 0.2s;
 }
 
+.history-item.clickable {
+    cursor: pointer;
+}
+
+.history-item.clickable:hover {
+    background: rgba(88, 166, 255, 0.1);
+    border-color: var(--primary);
+}
+
 .history-item:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: var(--primary);

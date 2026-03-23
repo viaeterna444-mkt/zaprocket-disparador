@@ -42,6 +42,32 @@ const countProcessing = document.getElementById('count-processing');
 const countSent = document.getElementById('count-sent');
 const countError = document.getElementById('count-error');
 
+// --- Web Worker para Timers no Background ---
+// Evita que o navegador pause os envios quando a aba não estiver visível
+const sleepWorkerBlob = new Blob([`
+    self.onmessage = function(e) {
+        setTimeout(function() { self.postMessage(e.data.id); }, e.data.ms);
+    };
+`], { type: 'application/javascript' });
+const sleepWorker = new Worker(URL.createObjectURL(sleepWorkerBlob));
+let sleepIdCounter = 0;
+const pendingSleeps = new Map();
+
+sleepWorker.onmessage = function (e) {
+    const resolve = pendingSleeps.get(e.data);
+    if (resolve) {
+        resolve();
+        pendingSleeps.delete(e.data);
+    }
+};
+
+function workerSleep(ms) {
+    return new Promise(resolve => {
+        const id = sleepIdCounter++;
+        pendingSleeps.set(id, resolve);
+        sleepWorker.postMessage({ id, ms });
+    });
+}
 
 // --- Lógica de Abas de Mensagem ---
 msgTabs.forEach((tab, index) => {
@@ -176,7 +202,11 @@ tagsInput.addEventListener('input', updateTags);
 
 function updateTags() {
     const rawTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
-    const tagsHtml = rawTags.map(t => `<span class="tag">${t}</span>`).join('');
+    const colors = ['#58a6ff', '#2ea043', '#d29922', '#f85149', '#a371f7', '#db6d28'];
+    const tagsHtml = rawTags.map((t, i) => {
+        const color = colors[i % colors.length];
+        return `<span class="tag" style="color: ${color}; border-color: ${color}; background: ${color}22;">${t}</span>`;
+    }).join('');
 
     document.querySelectorAll('.lead-card').forEach(card => {
         const tagsContainer = card.querySelector('.card-tags');
@@ -283,9 +313,9 @@ clearBtn.addEventListener('click', () => {
 
 async function processQueue(webhook) {
     while (isRunning) {
-        // Pausado? Aguarda 1 segundo e checa novamente
+        // Pausado? Aguarda 1 segundo e checa novamente (usando Worker para não ser pausado em background)
         if (isPaused) {
-            await new Promise(r => setTimeout(r, 1000));
+            await workerSleep(1000);
             continue;
         }
 
@@ -366,7 +396,7 @@ async function processQueue(webhook) {
             const randomDelay = Math.floor(Math.random() * (max - min + 1) + min) * 1000;
 
             console.log(`Aguardando ${randomDelay / 1000} segundos para o próximo envio...`);
-            await new Promise(r => setTimeout(r, randomDelay));
+            await workerSleep(randomDelay);
         }
     }
 }
@@ -375,15 +405,31 @@ async function processQueue(webhook) {
 
 function saveCampaignToHistory() {
     const history = JSON.parse(localStorage.getItem('zaprocket_history') || '[]');
+
+    // Captura estado atual das colunas
+    const getCardsData = (col) => Array.from(col.children).map(card => {
+        return {
+            id: card.dataset.id,
+            html: card.innerHTML
+        };
+    });
+
     const newEntry = {
+        id: Date.now().toString(),
         name: campaignNameInput.value || 'Sem Nome',
         sent: parseInt(countSent.textContent),
         errors: parseInt(countError.textContent),
-        date: new Date().toLocaleString('pt-BR')
+        date: new Date().toLocaleString('pt-BR'),
+        state: {
+            queue: getCardsData(colQueue),
+            processing: getCardsData(colProcessing),
+            sent: getCardsData(colSent),
+            error: getCardsData(colError)
+        }
     };
 
-    history.unshift(newEntry); // Adiciona no início
-    localStorage.setItem('zaprocket_history', JSON.stringify(history.slice(0, 5))); // Mantém os 5 últimos
+    history.unshift(newEntry);
+    localStorage.setItem('zaprocket_history', JSON.stringify(history.slice(0, 10))); // Mantém os 10 últimos
     renderHistory();
 }
 
@@ -392,9 +438,10 @@ function renderHistory() {
     if (history.length === 0) return;
 
     historyContainer.innerHTML = '';
-    history.forEach(item => {
+    history.forEach((item, index) => {
         const div = document.createElement('div');
-        div.className = 'history-item';
+        div.className = 'history-item clickable';
+        div.dataset.index = index;
         div.innerHTML = `
             <div class="history-item-header">
                 <span>${item.name}</span>
@@ -405,9 +452,47 @@ function renderHistory() {
             </div>
             <span class="history-item-date">${item.date}</span>
         `;
+        div.addEventListener('click', () => restoreCampaignState(index));
         historyContainer.appendChild(div);
     });
     lucide.createIcons();
+}
+
+function restoreCampaignState(index) {
+    if (isRunning) {
+        alert("Pausar ou aguardar o fim do envio atual antes de abrir o histórico.");
+        return;
+    }
+
+    const history = JSON.parse(localStorage.getItem('zaprocket_history') || '[]');
+    const item = history[index];
+    if (!item || !item.state) return;
+
+    campaignNameInput.value = item.name + " (Histórico)";
+
+    colQueue.innerHTML = '';
+    colProcessing.innerHTML = '';
+    colSent.innerHTML = '';
+    colError.innerHTML = '';
+
+    const buildCards = (container, arr) => {
+        if (!arr) return;
+        arr.forEach(data => {
+            const card = document.createElement('div');
+            card.className = 'lead-card';
+            card.draggable = false;
+            card.dataset.id = data.id;
+            card.innerHTML = data.html;
+            container.appendChild(card);
+        });
+    };
+
+    buildCards(colQueue, item.state.queue);
+    buildCards(colProcessing, item.state.processing);
+    buildCards(colSent, item.state.sent);
+    buildCards(colError, item.state.error);
+
+    updateCounters();
 }
 
 function saveConfigs() {
