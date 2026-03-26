@@ -391,8 +391,8 @@ async function processQueue(webhook) {
 
         // Aguarda delay aleatório
         if (colQueue.children.length > 0 && isRunning) {
-            const min = parseInt(delayMinInput.value) || 5;
-            const max = parseInt(delayMaxInput.value) || 15;
+            const min = parseInt(delayMinInput.value) || 15;
+            const max = parseInt(delayMaxInput.value) || 30;
             const randomDelay = Math.floor(Math.random() * (max - min + 1) + min) * 1000;
 
             console.log(`Aguardando ${randomDelay / 1000} segundos para o próximo envio...`);
@@ -511,8 +511,8 @@ function loadConfigs() {
     const configs = JSON.parse(localStorage.getItem('zaprocket_configs'));
     if (configs) {
         webhookInput.value = configs.webhook || '';
-        delayMinInput.value = configs.delayMin || '5';
-        delayMaxInput.value = configs.delayMax || '15';
+        delayMinInput.value = configs.delayMin || '15';
+        delayMaxInput.value = configs.delayMax || '30';
         tagsInput.value = configs.tags || '';
 
         if (configs.templates && Array.isArray(configs.templates)) {

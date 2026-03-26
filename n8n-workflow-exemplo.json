@@ -52,7 +52,7 @@
             },
             {
               "name": "options",
-              "value": "={ \"delay\": 1200 }"
+              "value": "={ \"delay\": 1200, \"presence\": \"composing\" }"
             },
             {
               "name": "textMessage",
@@ -93,7 +93,7 @@
             },
             {
               "name": "options",
-              "value": "={ \"delay\": 1200 }"
+              "value": "={ \"delay\": 1200, \"presence\": \"composing\" }"
             },
             {
               "name": "mediaMessage",
